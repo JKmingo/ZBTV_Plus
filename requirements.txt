@@ -1,0 +1,9 @@
+requests
+feedparser
+pytz
+aiohttp
+bs4
+tqdm
+async-timeout
+Flask
+gevent
