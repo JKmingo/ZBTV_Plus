@@ -482,7 +482,7 @@ async def ffmpeg_url(url, timeout, cmd='ffmpeg'):
     finally:
         if proc:
             await proc.wait()  # 等待子进程结束
-        print(res)
+        # print(res)
         return res
 
 
