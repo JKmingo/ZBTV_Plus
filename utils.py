@@ -449,7 +449,12 @@ def get_zubao_source_ip(result_div):
         return None
     if "存活" not in str(result_div):
         return None
-    return a_elems[0].get_text(strip=True)
+    pattern = r'\b((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?|(?:\d{1,3}\.){1,3}\d{1,3}(?::\d{1,5})?)\b'
+    # 使用 re.search() 查找第一个匹配的字符串
+    match = re.search(pattern, a_elems[0].get_text(strip=True))
+    if match:
+        return match.group(0)
+    return None 
 
 
 async def ffmpeg_url(url, timeout, cmd='ffmpeg'):
