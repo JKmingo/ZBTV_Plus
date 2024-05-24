@@ -29,7 +29,7 @@ ipv6_proxy = "http://www.ipv6proxy.net/go.php?u=" #此代理用于github，国�
 ftp_host = ""
 ftp_port = ""
 ftp_user = ""
-ftp_pass = ""
+ftp_passwd = ""
 ftp_remote_file = ""
 
 # 凯速网上传文件配置
