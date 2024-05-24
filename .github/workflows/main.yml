@@ -1,7 +1,7 @@
 name: IPTV
 on:
   schedule:
-    - cron : '00 19 * * *'
+    - cron: '00 19 * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,50 +10,52 @@ jobs:
     env:
       TZ: Asia/Shanghai
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.12"
-    - name: Update apt
-      run: sudo apt update
-    - name: Install ffmpeg
-      run: sudo apt install -y ffmpeg
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Run iptv
-      env:
-          ks_token: ${{ secrets.ks_token }}
-          ks_file_id: ${{ secrets.ks_file_id }}
-          ks_file_name: ${{ secrets.ks_file_name }}
-          ftp_host: ${{ secrets.ftp_host }}
-          ftp_passwd: ${{ secrets.ftp_passwd }}
-          ftp_remote_file: ${{ secrets.ftp_remote_file }}          
-      run: |
-        python main.py
-    - name: Commit and push if changed
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git diff
-        final_file=$(python -c '
-        try: 
-          import user_config as config
-        except ImportError: 
-          import config
-        print(config.final_file)')
-        if [[ -f "$final_file" ]]; then
-          git add -f "$final_file"
-        fi
-        if [[ -f user_result.log ]]; then
-          git add -f user_result.log
-        elif [[ -f result.log ]]; then
-          git add -f result.log
-        fi
-        if ! git diff --staged --quiet; then
-          git commit -m "Github Action Auto Updated"
-          git push --force
-        fi
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.12"
+      - name: Update apt
+        run: sudo apt update
+      - name: Install ffmpeg
+        run: sudo apt install -y ffmpeg
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Run iptv
+        env:
+          ks_token: ${{ secrets.KS_TOKEN }}
+          ks_file_id: ${{ secrets.KS_FILE_ID }}
+          ks_file_name: ${{ secrets.KS_FILE_NAME }}
+          ftp_host: ${{ secrets.FTP_HOST }}
+          ftp_port: ${{ secrets.FTP_PORT }}
+          ftp_user: ${{ secrets.FTP_USER }}
+          ftp_passwd: ${{ secrets.FTP_PASSWD }}
+          ftp_remote_file: ${{ secrets.FTP_REMOTE_FILE }}
+        run: |
+          python main.py
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git diff
+          final_file=$(python -c '
+          try: 
+            import user_config as config
+          except ImportError: 
+            import config
+          print(config.final_file)')
+          if [[ -f "$final_file" ]]; then
+            git add -f "$final_file"
+          fi
+          if [[ -f user_result.log ]]; then
+            git add -f user_result.log
+          elif [[ -f result.log ]]; then
+            git add -f result.log
+          fi
+          if ! git diff --staged --quiet; then
+            git commit -m "Github Action Auto Updated"
+            git push --force
+          fi
