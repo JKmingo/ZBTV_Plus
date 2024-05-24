@@ -297,15 +297,15 @@ class UpdateSource:
             ftp_port = ftp_port if ftp_port else os.getenv('ftp_port')
             ftp_user = getattr(config, "ftp_user", None)
             ftp_user = ftp_user if ftp_user else os.getenv('ftp_user')
-            ftp_pass = getattr(config, "ftp_pass", None)
-            ftp_pass = ftp_pass if ftp_pass else os.getenv('ftp_pass')
+            ftp_passwd = getattr(config, "ftp_passwd", None)
+            ftp_passwd = ftp_passwd if ftp_passwd else os.getenv('ftp_passwd')
             ftp_remote_file = getattr(config, "ftp_remote_file", None)
             ftp_remote_file = ftp_remote_file if ftp_remote_file else os.getenv('ftp_remote_file')
 
-            if ftp_host and ftp_port and ftp_user and ftp_pass and ftp_remote_file:
+            if ftp_host and ftp_port and ftp_user and ftp_passwd and ftp_remote_file:
                 ftp = FTP()
                 ftp.connect(ftp_host, int(ftp_port))
-                ftp.login(user=ftp_user, passwd=ftp_pass)
+                ftp.login(user=ftp_user, passwd=ftp_passwd)
                 with open(user_final_file, 'rb') as file:
                     up_res = ftp.storbinary(f'STOR {ftp_remote_file}', file)
                     if up_res.startswith('226 Transfer complete'):
