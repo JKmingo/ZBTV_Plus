@@ -35,7 +35,7 @@ def getChannelItems():
             if os.path.exists("user_" + config.source_file)
             else getattr(config, "source_file", "demo.txt")
         )
-        with open(user_source_file, "r", encoding="utf-8") as f:
+        with open(user_source_file, "r", encoding="utf-8-sig") as f:
             lines = f.readlines()
 
         # Create a dictionary to store the channels.
@@ -83,6 +83,15 @@ def updateChannelUrlsTxt(cate, channelUrls):
             f.write("\n")
     finally:
         f.close
+
+
+def getChannelUrlsTxt(cate, channelUrls):
+    res = cate + ",#genre#\n"
+    for name, urls in channelUrls.items():
+        for url in urls:
+            if url is not None:
+                res += name + "," + url + "\n"
+    return res
 
 
 def updateFile(final_file, old_file):
@@ -454,7 +463,7 @@ def get_zubao_source_ip(result_div):
     match = re.search(pattern, a_elems[0].get_text(strip=True))
     if match:
         return match.group(0)
-    return None 
+    return None
 
 
 async def ffmpeg_url(url, timeout, cmd='ffmpeg'):
