@@ -269,11 +269,13 @@ class UpdateSource:
 
     def main(self):
         channels = getChannelItems()
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for key, channelObj in channels.items():
-                futures.append(executor.submit(asyncio.run, self.visitPage({key: channelObj})))
-            concurrent.futures.wait(futures)
+        # with concurrent.futures.ThreadPoolExecutor() as executor:
+        #     futures = []
+        #     for key, channelObj in channels.items():
+        #         futures.append(executor.submit(asyncio.run, self.visitPage({key: channelObj})))
+        #     concurrent.futures.wait(futures)
+        for key, channelObj in channels.items():
+            asyncio.run(self.visitPage({key: channelObj}))
 
         for handler in logger.handlers:
             handler.close()
