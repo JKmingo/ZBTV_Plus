@@ -65,7 +65,7 @@ post_headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
 }
 
-channel_result_list = []
+channel_result_dict = {}
 
 
 def get_crawl_result():
@@ -142,10 +142,10 @@ def search_hotel_ip():
                 try:
                     if page == 1:
                         response = session.post("http://tonkiang.us/hoteliptv.php", headers=post_headers,
-                                                data=post_form)
+                                                data=post_form, timeout=30)
                     else:
                         page_url = f"http://tonkiang.us/hoteliptv.php?page={page}&pv={quote(search_kw)}&code={get_code}"
-                        response = session.get(page_url)
+                        response = session.get(page_url, timeout=30)
                     response.encoding = "UTF-8"
                     soup = BeautifulSoup(response.text, "html.parser")
                     # tables_div = soup.find("div", class_="tables")
@@ -199,7 +199,7 @@ class UpdateSource:
         self.search_keyword_list = search_keyword_list
         self.lock = threading.Lock()
 
-    async def visitPage(self, channelItems, index):
+    async def visitPage(self, channelItems):
         total_channels = sum(len(channelObj) for _, channelObj in channelItems.items())
         pbar = tqdm(total=total_channels)
 
@@ -232,15 +232,6 @@ class UpdateSource:
                             else:
                                 infoList.append([rtp_url, None, None])
 
-                if config.crawl_type in ["2", "3"]:
-                    key_name = name.replace(" ", "")
-                    tv_urls = self.crawl_result_dict.get(key_name, None)
-                    if tv_urls is not None:
-                        for tv_url in tv_urls:
-                            if not tv_url:
-                                continue
-                            infoList.append([tv_url, None, None])
-
                 try:
                     print(f"[{name}]有{len(infoList)}个直播源进行检测...")
                     channelUrls[name] = getTotalUrlsFromInfoList(infoList) or channelObj[name]
@@ -251,16 +242,28 @@ class UpdateSource:
                                     getTotalUrls(sorted_data) or channelObj[name]
                             )
                             for (url, date, resolution), response_time in sorted_data:
-                                logger.info(
-                                    f"Name: {name}, URL: {url}, Date: {date}, Resolution: {resolution}, Response Time: {response_time}fps"
-                                )
+                                with self.lock:
+                                    logger.info(
+                                        f"Name: {name}, URL: {url}, Date: {date}, Resolution: {resolution}, Response Time: {response_time}fps"
+                                    )
+                    if len(channelUrls.get(name, [])) < config.zb_urls_limit:
+                        if config.crawl_type in ["2", "3"]:
+                            key_name = name.replace(" ", "")
+                            tv_urls = self.crawl_result_dict.get(key_name, None)
+                            if tv_urls is not None:
+                                for tv_url in tv_urls:
+                                    if len(channelUrls.get(name, [])) >= config.zb_urls_limit:
+                                        break
+                                    if not tv_url:
+                                        continue
+                                    channelUrls[name].append(tv_url)
                 except Exception as e:
                     print(f"Error on sorting: {e}")
                     continue
                 finally:
                     pbar.update()
             with self.lock:
-                channel_result_list.insert(index, getChannelUrlsTxt(cate, channelUrls))
+                channel_result_dict[cate] = getChannelUrlsTxt(cate, channelUrls)
             # await asyncio.sleep(1)
         pbar.close()
 
@@ -268,10 +271,8 @@ class UpdateSource:
         channels = getChannelItems()
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
-            index = 0
             for key, channelObj in channels.items():
-                futures.append(executor.submit(asyncio.run, self.visitPage({key: channelObj}, index)))
-                index += 1
+                futures.append(executor.submit(asyncio.run, self.visitPage({key: channelObj})))
             concurrent.futures.wait(futures)
 
         for handler in logger.handlers:
@@ -283,6 +284,9 @@ class UpdateSource:
         )
         # updateFile(user_final_file, "result_new.txt")
         updateFile(user_log_file, "result_new.log")
+        channel_result_list = []
+        for key, channelObj in channels.items():
+            channel_result_list.append(channel_result_dict.get(key, ""))
         with open(user_final_file, "w", encoding="utf-8") as f:
             f.write(
                 "\n".join(channel_result_list) + "\n"
