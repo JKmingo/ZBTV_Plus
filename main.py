@@ -21,7 +21,9 @@ from utils import (
     find_matching_values,
     kaisu_upload,
     getTotalUrlsFromInfoList,
-    getChannelUrlsTxt
+    getChannelUrlsTxt,
+    get_previous_results,
+    merge_urls_lists, checkByURLKeywordsBlacklist
 )
 import logging
 import os
@@ -65,6 +67,7 @@ post_headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
 }
 
+previous_result_dict = {}
 channel_result_dict = {}
 
 
@@ -225,6 +228,8 @@ class UpdateSource:
                             if not sub_ip.startswith("rtp://"):
                                 continue
                             rtp_url = sub_ip.replace("rtp:/", f"http://{zb_ip}/rtp")
+                            if not checkByURLKeywordsBlacklist(rtp_url):
+                                continue
                             if "#" in rtp_url:
                                 urls = rtp_url.split("#")
                                 infoList.append([urls[0], None, None])
@@ -257,6 +262,12 @@ class UpdateSource:
                                     if not tv_url:
                                         continue
                                     channelUrls[name].append(tv_url)
+                    if len(channelUrls.get(name, [])) < config.zb_urls_limit:
+                        previous_result_channels = previous_result_dict.get(name, [])
+                        if previous_result_channels:
+                            channelUrls[name] = merge_urls_lists(channelUrls.get(name, []),
+                                                                 previous_result_channels
+                                                                 )[:config.zb_urls_limit]
                 except Exception as e:
                     print(f"Error on sorting: {e}")
                     continue
@@ -333,6 +344,7 @@ class UpdateSource:
 
 
 if __name__ == '__main__':
+    previous_result_dict = get_previous_results(config.final_file)
     crawl_result_dict = get_crawl_result()
     subscribe_dict, kw_zbip_dict, search_keyword_list = search_hotel_ip()
     UpdateSource(crawl_result_dict, subscribe_dict, kw_zbip_dict, search_keyword_list).main()
