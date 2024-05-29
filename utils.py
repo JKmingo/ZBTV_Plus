@@ -69,6 +69,14 @@ def getChannelItems():
         f.close()
 
 
+if __name__ == '__main__':
+    channels = getChannelItems()
+    index = 0
+    for key, channelObj in channels.items():
+        print("=" * 10, key, index, "=" * 10)
+        index += 1
+
+
 def updateChannelUrlsTxt(cate, channelUrls):
     """
     Update the category and channel urls to the final file
@@ -551,3 +559,58 @@ def kaisu_upload(token, file_path, new_filename, file_id="0"):
         }
         requests.post(f"https://api.kstore.space/api/v1/file/direct?access_token={token}", data=data)
         print("File uploaded on kaisu successfully")
+
+
+def merge_urls_lists(urls_list1, urls_list2):
+    if not urls_list1 and not urls_list2:
+        return []
+    if not urls_list2:
+        return urls_list1
+    if not urls_list1:
+        return urls_list2
+    # 使用有序字典来保留列表顺序
+    result_dict = dict()
+    key_set = set()
+    # 添加第一个列表的元素到结果字典中，并去除重复项
+    for url in urls_list1:
+        key_set.add(url)
+        if "$" in url:
+            key_set.add(url.split("$")[0])
+        result_dict[url] = None
+
+    # 添加第二个列表的元素到结果字典中，并去除重复项
+    for url in urls_list2:
+        if "$" in url:
+            url_key = url.split("$")[0]
+        else:
+            url_key = url
+        if url_key in key_set:
+            continue
+        result_dict[url] = None
+
+    # 输出结果列表
+    return list(result_dict.keys())
+
+
+def get_previous_results(file_path):
+    # 定义一个空字典来存储频道名称和对应的URL列表
+    channel_dict = {}
+    if not os.path.exists(file_path):
+        return channel_dict
+    # 打开并读取文件
+    with open(file_path, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+        for line in lines:
+            if "#genre#" in line:
+                continue
+            # 按逗号分割每行数据
+            parts = line.strip().split(',')
+            if len(parts) == 2:
+                channel_name, url = parts
+                # 如果频道名称已经在字典中，追加到URL列表
+                if channel_name in channel_dict:
+                    channel_dict[channel_name].append(url)
+                # 如果频道名称不在字典中，创建一个新的列表
+                else:
+                    channel_dict[channel_name] = [url]
+    return channel_dict
