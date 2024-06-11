@@ -239,8 +239,8 @@ class UpdateSource:
 
                 try:
                     print(f"[{name}]有{len(infoList)}个直播源进行检测...")
-                    channelUrls[name] = getTotalUrlsFromInfoList(infoList) or channelObj[name]
                     if config.open_sort:
+                        channelUrls[name] = getTotalUrlsFromInfoList(infoList) or channelObj[name]
                         sorted_data = await compareSpeedAndResolution(infoList)
                         if sorted_data:
                             channelUrls[name] = (
@@ -253,7 +253,7 @@ class UpdateSource:
                                     )
                     if len(channelUrls.get(name, [])) < config.zb_urls_limit:
                         if config.crawl_type in ["2", "3"]:
-                            key_name = name.replace(" ", "")
+                            key_name = filter_CCTV_key(name)
                             tv_urls = self.crawl_result_dict.get(key_name, None)
                             if tv_urls is not None:
                                 for tv_url in tv_urls:
@@ -261,7 +261,10 @@ class UpdateSource:
                                         break
                                     if not tv_url:
                                         continue
-                                    channelUrls[name].append(tv_url)
+                                    if channelUrls.get(name, None):
+                                        channelUrls[name].append(tv_url)
+                                    else:
+                                        channelUrls[name] = [tv_url]
                     if len(channelUrls.get(name, [])) < config.zb_urls_limit:
                         previous_result_channels = previous_result_dict.get(name, [])
                         if previous_result_channels:
