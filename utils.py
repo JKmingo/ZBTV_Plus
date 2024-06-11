@@ -69,14 +69,6 @@ def getChannelItems():
         f.close()
 
 
-if __name__ == '__main__':
-    channels = getChannelItems()
-    index = 0
-    for key, channelObj in channels.items():
-        print("=" * 10, key, index, "=" * 10)
-        index += 1
-
-
 def updateChannelUrlsTxt(cate, channelUrls):
     """
     Update the category and channel urls to the final file
