@@ -1,6 +1,3 @@
-import concurrent
-import threading
-import traceback
 from ftplib import FTP
 import requests
 
@@ -143,12 +140,28 @@ def search_hotel_ip():
             }
             for page in range(1, config.search_page_num + 1):
                 try:
+                    print(f"搜索关键字[{search_kw}]，第[{page}]页...")
+                    max_retries = 5
                     if page == 1:
-                        response = session.post("http://tonkiang.us/hoteliptv.php", headers=post_headers,
-                                                data=post_form, timeout=30)
+                        for attempt in range(max_retries):
+                            try:
+                                response = session.post("http://tonkiang.us/hoteliptv.php", headers=post_headers,
+                                                        data=post_form, timeout=30)
+                                break
+                            except requests.exceptions.RequestException as e:
+                                print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
+                        else:
+                            print(f"尝试[{max_retries}]后仍然失败！！！")
                     else:
                         page_url = f"http://tonkiang.us/hoteliptv.php?page={page}&pv={quote(search_kw)}&code={get_code}"
-                        response = session.get(page_url, timeout=30)
+                        for attempt in range(max_retries):
+                            try:
+                                response = session.get(page_url, timeout=30)
+                                break
+                            except requests.exceptions.RequestException as e:
+                                print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
+                        else:
+                            print(f"尝试[{max_retries}]后仍然失败！！！")
                     response.encoding = "UTF-8"
                     soup = BeautifulSoup(response.text, "html.parser")
                     # tables_div = soup.find("div", class_="tables")
@@ -194,13 +207,11 @@ def search_hotel_ip():
 
 class UpdateSource:
 
-    def __init__(self, crawl_result_dict, subscribe_dict, kw_zbip_dict, search_keyword_list, callback=None):
-        self.callback = callback
+    def __init__(self, crawl_result_dict, subscribe_dict, kw_zbip_dict, search_keyword_list):
         self.crawl_result_dict = crawl_result_dict
         self.subscribe_dict = subscribe_dict
         self.kw_zbip_dict = kw_zbip_dict
         self.search_keyword_list = search_keyword_list
-        self.lock = threading.Lock()
 
     async def visitPage(self, channelItems):
         total_channels = sum(len(channelObj) for _, channelObj in channelItems.items())
@@ -247,10 +258,9 @@ class UpdateSource:
                                     getTotalUrls(sorted_data) or channelObj[name]
                             )
                             for (url, date, resolution), response_time in sorted_data:
-                                with self.lock:
-                                    logger.info(
-                                        f"Name: {name}, URL: {url}, Date: {date}, Resolution: {resolution}, Response Time: {response_time}fps"
-                                    )
+                                logger.info(
+                                    f"Name: {name}, URL: {url}, Date: {date}, Resolution: {resolution}, Response Time: {response_time}fps"
+                                )
                     if len(channelUrls.get(name, [])) < config.zb_urls_limit:
                         if config.crawl_type in ["2", "3"]:
                             key_name = filter_CCTV_key(name)
@@ -268,15 +278,14 @@ class UpdateSource:
                             channelUrls[name] = merge_urls_lists(channelUrls.get(name, []),
                                                                  previous_result_channels
                                                                  )[:config.zb_urls_limit]
-                    if not channelUrls.get(name, None): 
+                    if not channelUrls.get(name, None):
                         channelUrls[name] = channelObj[name]
                 except Exception as e:
                     print(f"Error on sorting: {e}")
                     continue
                 finally:
                     pbar.update()
-            with self.lock:
-                channel_result_dict[cate] = getChannelUrlsTxt(cate, channelUrls)
+            channel_result_dict[cate] = getChannelUrlsTxt(cate, channelUrls)
             # await asyncio.sleep(1)
         pbar.close()
 
