@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IPTV</title>
+</head>
+<body>
+<div id="progress-container">
+    <span id="progress-text"></span>
+</div>
+<button onclick="window.location.href='/run'">开始</button>
+<button onclick="window.location.href='/tv'">查看结果</button>
+
+<script>
+    function poll() {
+        fetch('/poll')
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    if (data.message.startsWith("Processing ")) {
+                        document.getElementById('progress-text').innerHTML += data.message.replace(/#/g, "█") + '</br>';
+                    } else {
+                        document.getElementById('progress-text').innerHTML += data.message + '</br>';
+                    }
+
+                }
+                // 使用 setTimeout 延迟下一次轮询，避免立即启动下一个请求
+                setTimeout(poll, 1000);
+            })
+            .catch(error => {
+                console.error('Polling error:', error);
+                // 如果出错，可以选择稍后重新尝试轮询
+                setTimeout(poll, 5000);
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        poll();  // 页面加载完成后启动轮询
+    });
+</script>
+</body>
+</html>
