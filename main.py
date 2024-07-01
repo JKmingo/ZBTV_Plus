@@ -278,7 +278,7 @@ class UpdateSource:
                             channelUrls[name] = merge_urls_lists(channelUrls.get(name, []),
                                                                  previous_result_channels
                                                                  )[:config.zb_urls_limit]
-                    if not channelUrls.get(name, None):
+                    if not channelUrls.get(name, None) and config.is_use_demo_if_none:
                         channelUrls[name] = channelObj[name]
                 except Exception as e:
                     print(f"Error on sorting: {e}")
