@@ -1,7 +1,7 @@
 FROM python:3.10
 
 # 更换阿里源 sed修改文件中的内容 sed -i "s/原字符串/新字符串/g"
-RUN sed -i "s/archive.ubuntu./mirrors.aliyun./g" /etc/apt/sources.list && \
+RUN sed -i "s/archive.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list && \
     sed -i "s/deb.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list && \
     sed -i "s/security.debian.org\/debian-security/mirrors.aliyun.com\/debian-security/g" /etc/apt/sources.list && \
     sed -i "s/httpredir.debian.org\/debian-security/mirrors.aliyun.com\/debian-security/g" /etc/apt/sources.list
