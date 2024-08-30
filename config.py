@@ -1,8 +1,14 @@
+# docker中不要修改
 source_file = "demo.txt"
 final_file = "result.txt"
-zb_urls_limit = 10
+
+# 权重，用于测速，一般不需要修改
 response_time_weight = 0.5
 resolution_weight = 0.5
+
+# 每个频道直播源数量
+zb_urls_limit = 10
+
 # 是否打开测速
 open_sort = True
 # 是否找不到源时保留demo的源
