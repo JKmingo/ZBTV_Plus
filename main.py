@@ -1,10 +1,8 @@
 from ftplib import FTP
 import requests
 
-try:
-    import user_config as config
-except ImportError:
-    import config
+from dynamic_config import DynamicConfig
+config = DynamicConfig()
 import asyncio
 from bs4 import BeautifulSoup
 from utils import (
@@ -69,6 +67,7 @@ channel_result_dict = {}
 
 
 def get_crawl_result():
+    config.reload()
     crawl_result_dict = {}
     if config.crawl_type in ["2", "3"]:
         for conf_url in config.crawl_urls:
@@ -101,6 +100,7 @@ def get_crawl_result():
 
 
 def search_hotel_ip():
+    config.reload()
     subscribe_dict = {}
     kw_zbip_dict = {}
     search_keyword_list = []
@@ -247,7 +247,12 @@ class UpdateSource:
                                 infoList.append([urls[1], None, None])
                             else:
                                 infoList.append([rtp_url, None, None])
-
+                if config.crawl_type in ["2", "3"]:
+                    key_name = filter_CCTV_key(name)
+                    tv_urls = self.crawl_result_dict.get(key_name, None)
+                    if tv_urls is not None:
+                        for tv_url in tv_urls:
+                            infoList.append([tv_url, None, None])
                 try:
                     print(f"[{name}]有{len(infoList)}个直播源进行检测...")
                     channelUrls[name] = getTotalUrlsFromInfoList(infoList)
@@ -261,17 +266,6 @@ class UpdateSource:
                                 logger.info(
                                     f"Name: {name}, URL: {url}, Date: {date}, Resolution: {resolution}, Response Time: {response_time}fps"
                                 )
-                    if len(channelUrls.get(name, [])) < config.zb_urls_limit:
-                        if config.crawl_type in ["2", "3"]:
-                            key_name = filter_CCTV_key(name)
-                            tv_urls = self.crawl_result_dict.get(key_name, None)
-                            if tv_urls is not None:
-                                for tv_url in tv_urls:
-                                    if len(channelUrls.get(name, [])) >= config.zb_urls_limit:
-                                        break
-                                    if not tv_url:
-                                        continue
-                                    channelUrls[name].append(tv_url)
                     if len(channelUrls.get(name, [])) < config.zb_urls_limit:
                         previous_result_channels = previous_result_dict.get(name, [])
                         if previous_result_channels:
@@ -290,6 +284,7 @@ class UpdateSource:
         pbar.close()
 
     def main(self):
+        config.reload()
         channels = getChannelItems()
         # with concurrent.futures.ThreadPoolExecutor() as executor:
         #     futures = []
