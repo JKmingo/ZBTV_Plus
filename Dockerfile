@@ -1,10 +1,14 @@
 FROM python:3.10
 
-# 更换阿里源 sed修改文件中的内容 sed -i "s/原字符串/新字符串/g"
-RUN sed -i "s/archive.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list && \
-    sed -i "s/deb.debian.org/mirrors.aliyun.com/g" /etc/apt/sources.list && \
-    sed -i "s/security.debian.org\/debian-security/mirrors.aliyun.com\/debian-security/g" /etc/apt/sources.list && \
-    sed -i "s/httpredir.debian.org\/debian-security/mirrors.aliyun.com\/debian-security/g" /etc/apt/sources.list
+# 更换阿里源
+RUN set -eux; \
+    DEBIAN_CODENAME=$(awk -F= '/^VERSION_CODENAME=/{print $2}' /etc/os-release); \
+    echo "deb http://mirrors.aliyun.com/debian/ $DEBIAN_CODENAME main contrib non-free" > /etc/apt/sources.list; \
+    echo "deb-src http://mirrors.aliyun.com/debian/ $DEBIAN_CODENAME main contrib non-free" >> /etc/apt/sources.list; \
+	echo "deb http://mirrors.aliyun.com/debian-security $DEBIAN_CODENAME-security main contrib non-free" >> /etc/apt/sources.list; \
+    echo "deb-src http://mirrors.aliyun.com/debian-security $DEBIAN_CODENAME-security main contrib non-free" >> /etc/apt/sources.list; \
+    echo "deb http://mirrors.aliyun.com/debian/ $DEBIAN_CODENAME-updates main contrib non-free" >> /etc/apt/sources.list; \
+    echo "deb-src http://mirrors.aliyun.com/debian/ $DEBIAN_CODENAME-updates main contrib non-free" >> /etc/apt/sources.list;
 
 # 安装ffmpeg
 RUN apt-get update && apt-get install -y ffmpeg
