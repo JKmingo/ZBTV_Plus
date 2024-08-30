@@ -3,19 +3,17 @@ import queue
 import sys
 import threading
 
-from flask import Flask, send_from_directory, jsonify, Response
+from flask import Flask, jsonify, Response, request, redirect, render_template, url_for, flash
 from gevent import pywsgi
 
 import main
+from dynamic_config import DynamicConfig
 from main import UpdateSource, get_crawl_result, search_hotel_ip
 from utils import get_previous_results
+config = DynamicConfig()
 
-try:
-    import user_config as config
-except ImportError:
-    import config
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=os.getcwd())
 app.config['SECRET_KEY'] = 'secret!'
 
 is_task_running = False
@@ -58,6 +56,7 @@ def run_background_task():
     global is_task_running
     global run_thread
     with StderrInterceptor() as interceptor:
+        config.reload()
         main.previous_result_dict = get_previous_results(config.final_file)
         crawl_result_dict = get_crawl_result()
         subscribe_dict, kw_zbip_dict, search_keyword_list = search_hotel_ip()
@@ -68,7 +67,7 @@ def run_background_task():
 
 @app.route('/')
 def index():
-    return send_from_directory(os.getcwd(), 'index.html')
+    return render_template('index.html')
 
 
 @app.route('/run')
@@ -76,13 +75,15 @@ def run():
     global is_task_running
     global run_thread
     if is_task_running:
-        return send_from_directory(os.getcwd(), 'index.html')
+        flash('正在执行中...')
+        return redirect(url_for('index'))
     is_task_running = True
     with thread_lock:
         if run_thread is None:
             run_thread = threading.Thread(target=run_background_task)
             run_thread.start()
-    return send_from_directory(os.getcwd(), 'index.html')
+    flash('正在执行中...')
+    return redirect(url_for('index'))
 
 
 @app.route('/poll')
@@ -104,6 +105,32 @@ def tv():
         return Response(content, mimetype='text/plain')
     return "结果还未生成，请稍候..."
 
+
+@app.route('/setconfig', methods=['GET', 'POST'])
+def set_config():
+    return set_file_content('config.py', 'set_config')
+
+
+@app.route('/setdemo', methods=['GET', 'POST'])
+def set_demo():
+    return set_file_content('demo.txt', 'set_demo')
+
+
+def set_file_content(file_path, method_name):
+    if request.method == 'POST':
+        # 获取用户提交的新内容
+        new_content = request.form['file_content'].replace('\r\n', '\n')
+        # 将新内容写入文件
+        with open(file_path, 'w') as f:
+            f.write(new_content)
+        flash('保存成功')
+        # 重定向到首页
+        return redirect(url_for(method_name))
+
+        # GET 请求时，读取文件内容并显示在页面中
+    with open(file_path, 'r') as f:
+        file_content = f.read()
+    return render_template('config.html', file_content=file_content)
 
 if __name__ == '__main__':
     server = pywsgi.WSGIServer(('0.0.0.0', 8989), app, log=None)
