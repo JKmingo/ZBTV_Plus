@@ -5,10 +5,17 @@
     <title>IPTV</title>
 </head>
 <body>
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div>{{ messages[0] }}</div>
+    {% endif %}
+{% endwith %}
 <div id="progress-container">
     <span id="progress-text"></span>
 </div>
 <button onclick="window.location.href='/run'">开始</button>
+<button onclick="window.location.href='/setconfig'">设置配置信息</button>
+<button onclick="window.location.href='/setdemo'">设置模板</button>
 <button onclick="window.location.href='/tv'">查看结果</button>
 
 <script>
