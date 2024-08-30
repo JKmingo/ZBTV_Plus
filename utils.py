@@ -5,10 +5,8 @@ import traceback
 
 import requests
 
-try:
-    import user_config as config
-except ImportError:
-    import config
+from dynamic_config import DynamicConfig
+config = DynamicConfig()
 import asyncio
 import time
 import re
@@ -29,6 +27,7 @@ def getChannelItems():
     Get the channel items from the source file
     """
     # Open the source file and read all lines.
+    config.reload()
     try:
         user_source_file = (
             "user_" + config.source_file
@@ -154,6 +153,7 @@ def getUrlInfo(result, channel_name):
 
 
 async def check_stream_speed(url_info):
+    config.reload()
     try:
         is_v6 = is_ipv6(url_info[0])
         if is_v6 and (os.getenv("ipv6_proxy") or config.ipv6_proxy):
@@ -205,6 +205,7 @@ async def compareSpeedAndResolution(infoList):
     """
     Sort by speed and resolution
     """
+    config.reload()
     if not infoList:
         return None
     response_times = await asyncio.gather(*[getSpeed(url_info) for url_info in infoList])
@@ -251,6 +252,7 @@ def getTotalUrls(data):
     """
     Get the total urls with filter by date and depulicate
     """
+    config.reload()
     if len(data) > config.zb_urls_limit:
         total_urls = [url for (url, _, _), _ in data[:config.zb_urls_limit]]
     else:
@@ -262,6 +264,7 @@ def getTotalUrlsFromInfoList(infoList):
     """
     Get the total urls from info list
     """
+    config.reload()
     total_urls = [
         url for url, _, _ in infoList[: min(len(infoList), config.zb_urls_limit)]
     ]
@@ -284,6 +287,7 @@ def checkUrlIPVType(url):
     """
     Check if the url is compatible with the ipv type in the config
     """
+    config.reload()
     ipv_type = getattr(config, "ipv_type", "ipv4")
     if ipv_type == "ipv4":
         return not is_ipv6(url)
@@ -297,6 +301,7 @@ def checkByDomainBlacklist(url):
     """
     Check by domain blacklist
     """
+    config.reload()
     domain_blacklist = [
         urlparse(domain).netloc if urlparse(domain).scheme else domain
         for domain in getattr(config, "domain_blacklist", [])
@@ -308,6 +313,7 @@ def checkByURLKeywordsBlacklist(url):
     """
     Check by URL blacklist keywords
     """
+    config.reload()
     url_keywords_blacklist = getattr(config, "url_keywords_blacklist", [])
     return not any(keyword in url for keyword in url_keywords_blacklist)
 
@@ -516,6 +522,7 @@ def analyse_video_info(video_info):
 
 def find_matching_values(dictionary, partial_key):
     # 遍历字典键并找到包含部分字符串的键
+    config.reload()
     result = []
     matching_keys = []
     for key in dictionary:
