@@ -1,4 +1,5 @@
 import os
+import shutil
 import queue
 import sys
 import threading
@@ -65,6 +66,28 @@ def run_background_task():
     run_thread = None
 
 
+def copy_output_files():
+    source_directory = 'output'
+    destination_directory = os.getcwd()  # 当前目录
+
+    try:
+        # 列出 output 目录下的所有文件
+        files = [f for f in os.listdir(source_directory) if os.path.isfile(os.path.join(source_directory, f))]
+
+        if files:
+            for file in files:
+                source_path = os.path.join(source_directory, file)
+                destination_path = os.path.join(destination_directory, file)
+
+                shutil.copy(source_path, destination_path)
+                print(f"File copied from {source_path} to {destination_path}")
+        else:
+            print("No files found in the output directory")
+    except Exception as e:
+        print(f"Error occurred: {e}")
+
+copy_output_files()
+
 @app.route('/')
 def index():
     global messages
@@ -100,6 +123,7 @@ def poll():
 
 @app.route('/tv')
 def tv():
+    config.reload()
     user_final_file = getattr(config, "final_file", "result.txt")
     if os.path.exists(user_final_file):
         with open(user_final_file, 'r', encoding='utf-8') as f:
@@ -135,5 +159,6 @@ def set_file_content(file_path, method_name):
     return render_template('config.html', file_content=file_content)
 
 if __name__ == '__main__':
+    if os.path.
     server = pywsgi.WSGIServer(('::', 8989), app, log=None)
     server.serve_forever()
