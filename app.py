@@ -160,5 +160,6 @@ def set_file_content(file_path, method_name):
     return render_template('config.html', file_content=file_content)
 
 if __name__ == '__main__':
-    服务器绑定 IPv4 和 IPv6 地址
-    app.run(host='::', port=8989, debug=True)
+    server = pywsgi.WSGIServer(('0.0.0.0', 8989), app, log=None)
+    server.serve_forever()
+    
