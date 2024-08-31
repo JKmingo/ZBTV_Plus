@@ -1,6 +1,6 @@
 from ftplib import FTP
 import requests
-
+import shutil
 from dynamic_config import DynamicConfig
 config = DynamicConfig()
 import asyncio
@@ -310,6 +310,8 @@ class UpdateSource:
             f.write(
                 "\n".join(channel_result_list) + "\n"
             )  # 写入文件，并换行
+        if os.path.exists('output'):
+            shutil.copy(user_final_file, 'output')
         print(f"Update completed! Please check the {user_final_file} file!")
 
         ftp = None
