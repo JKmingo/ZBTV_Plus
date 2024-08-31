@@ -67,6 +67,8 @@ def run_background_task():
 
 @app.route('/')
 def index():
+    global messages
+    messages = queue.Queue()
     return render_template('index.html')
 
 
