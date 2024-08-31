@@ -160,6 +160,5 @@ def set_file_content(file_path, method_name):
     return render_template('config.html', file_content=file_content)
 
 if __name__ == '__main__':
-    if os.path.
     server = pywsgi.WSGIServer(('::', 8989), app, log=None)
     server.serve_forever()
