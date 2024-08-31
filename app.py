@@ -68,8 +68,9 @@ def run_background_task():
 
 def copy_output_files():
     source_directory = 'output'
-    destination_directory = os.getcwd()  # 当前目录
-
+    destination_directory = os.getcwd()
+    if not os.path.exists(source_directory):
+        return
     try:
         # 列出 output 目录下的所有文件
         files = [f for f in os.listdir(source_directory) if os.path.isfile(os.path.join(source_directory, f))]
