@@ -226,27 +226,28 @@ class UpdateSource:
                 )
 
                 infoList = []
-                for search_keyword in self.search_keyword_list:
-                    sub_ips = find_matching_values(self.subscribe_dict, f"{search_keyword}|{filter_CCTV_key(name)}")
-                    # sub_ips = subscribe_dict.get(f"{search_keyword}|{filter_CCTV_key(name)}", None)
-                    if not sub_ips:
-                        continue
-                    kw_zbip_list = self.kw_zbip_dict.get(search_keyword, None)
-                    if not kw_zbip_list:
-                        continue
-                    for zb_ip in kw_zbip_list:
-                        for sub_ip in sub_ips:
-                            if not sub_ip.startswith("rtp://"):
-                                continue
-                            rtp_url = sub_ip.replace("rtp:/", f"http://{zb_ip}/rtp")
-                            if not checkByURLKeywordsBlacklist(rtp_url):
-                                continue
-                            if "#" in rtp_url:
-                                urls = rtp_url.split("#")
-                                infoList.append([urls[0], None, None])
-                                infoList.append([urls[1], None, None])
-                            else:
-                                infoList.append([rtp_url, None, None])
+                if config.crawl_type in ["1", "3"]:
+                    for search_keyword in self.search_keyword_list:
+                        sub_ips = find_matching_values(self.subscribe_dict, f"{search_keyword}|{filter_CCTV_key(name)}")
+                        # sub_ips = subscribe_dict.get(f"{search_keyword}|{filter_CCTV_key(name)}", None)
+                        if not sub_ips:
+                            continue
+                        kw_zbip_list = self.kw_zbip_dict.get(search_keyword, None)
+                        if not kw_zbip_list:
+                            continue
+                        for zb_ip in kw_zbip_list:
+                            for sub_ip in sub_ips:
+                                if not sub_ip.startswith("rtp://"):
+                                    continue
+                                rtp_url = sub_ip.replace("rtp:/", f"http://{zb_ip}/rtp")
+                                if not checkByURLKeywordsBlacklist(rtp_url):
+                                    continue
+                                if "#" in rtp_url:
+                                    urls = rtp_url.split("#")
+                                    infoList.append([urls[0], None, None])
+                                    infoList.append([urls[1], None, None])
+                                else:
+                                    infoList.append([rtp_url, None, None])
                 if config.crawl_type in ["2", "3"]:
                     key_name = filter_CCTV_key(name)
                     tv_urls = self.crawl_result_dict.get(key_name, None)
