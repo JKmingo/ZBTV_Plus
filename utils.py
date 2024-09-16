@@ -201,6 +201,11 @@ async def getSpeed(url_info):
         return float("-inf")
 
 
+async def limited_getSpeed(url_info, semaphore):
+    async with semaphore:
+        return await getSpeed(url_info)
+
+
 async def compareSpeedAndResolution(infoList):
     """
     Sort by speed and resolution
@@ -208,7 +213,12 @@ async def compareSpeedAndResolution(infoList):
     config.reload()
     if not infoList:
         return None
-    response_times = await asyncio.gather(*[getSpeed(url_info) for url_info in infoList])
+    semaphore = asyncio.Semaphore(config.max_concurrent_tasks)
+    # 使用信号量限制同时运行的协程数量
+    response_times = await asyncio.gather(
+        *[limited_getSpeed(url_info, semaphore) for url_info in infoList]
+    )
+    # response_times = await asyncio.gather(*[getSpeed(url_info) for url_info in infoList])
     valid_responses = [
         (info, rt) for info, rt in zip(infoList, response_times) if rt != float("-inf")
     ]
