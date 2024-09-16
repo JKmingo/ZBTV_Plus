@@ -9,6 +9,9 @@ resolution_weight = 0.5
 # 每个频道直播源数量
 zb_urls_limit = 10
 
+# 最大协程数
+max_concurrent_tasks = 10
+
 # 是否打开测速
 open_sort = True
 # 是否找不到源时保留demo的源
