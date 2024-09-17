@@ -521,9 +521,26 @@ def analyse_video_info(video_info):
     resolution = None
     if video_info is not None:
         info_data = video_info.replace(" ", "")
-        matches = re.findall(r"frame=(\d+)", info_data)
+        matches = re.findall(r"frame=(\d+).*?fps=([\d\.]+).*?speed=([\d\.]+)x", info_data)
         if matches:
-            frame_size = int(matches[-1])
+            total_frame = 0
+            total_fps = 0.0
+            total_speed = 0.0
+            count = 0
+            # 遍历匹配结果并累加
+            for m in matches:
+                frame = int(m[0])
+                fps = float(m[1])
+                speed = float(m[2])
+                total_frame += frame
+                total_fps += fps
+                total_speed += speed
+                count += 1
+            # 计算平均值
+            avg_frame = total_frame / count if count > 0 else 0
+            avg_fps = total_fps / count if count > 0 else 0
+            avg_speed = total_speed / count if count > 0 else 0
+            frame_size = avg_frame + avg_fps + avg_speed
         match = re.search(r'(\d{3,4}x\d{3,4})', video_info)
         if match:
             resolution = match.group(0)
