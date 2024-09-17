@@ -493,12 +493,12 @@ async def ffmpeg_url(url, timeout, cmd='ffmpeg'):
             stderr=asyncio.subprocess.PIPE
         )
         # 等待子进程执行完毕并获取输出
-        out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout + 30)
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout + 5)
         if out:
             res = out.decode('utf-8')
         if err:
             res = err.decode('utf-8')
-        return None
+        return res
     except asyncio.TimeoutError:
         # traceback.print_exc()
         if proc:
