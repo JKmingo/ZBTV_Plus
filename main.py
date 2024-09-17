@@ -253,6 +253,8 @@ class UpdateSource:
                     tv_urls = self.crawl_result_dict.get(key_name, None)
                     if tv_urls is not None:
                         for tv_url in tv_urls:
+                            if not checkByURLKeywordsBlacklist(tv_url):
+                                continue
                             infoList.append([tv_url, None, None])
                 try:
                     print(f"[{name}]有{len(infoList)}个直播源进行检测...")
