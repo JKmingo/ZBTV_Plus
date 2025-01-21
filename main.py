@@ -134,7 +134,7 @@ def search_hotel_ip():
                     if page == 1:
                         for attempt in range(max_retries):
                             try:
-                                web_browser.visit_page("https://tonkiang.us/hoteliptv.php")
+                                web_browser.visit_page("htts://up.myzy.us.kg/https://tonkiang.us/hoteliptv.php")
                                 web_browser.search(search_kw)
                                 break
                             except requests.exceptions.RequestException as e:
