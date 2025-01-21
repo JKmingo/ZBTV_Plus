@@ -6,4 +6,7 @@ bs4
 tqdm
 async-timeout
 Flask
+m3u8
+ffmpeg-python
 gevent
+selenium
