@@ -130,7 +130,7 @@ def search_hotel_ip():
             next_page_url = None
             session = requests.Session()
             post_form = {
-                '52ff7': search_kw,
+                'b8f54': search_kw,
             }
             for page in range(1, config.search_page_num + 1):
                 try:
