@@ -11,21 +11,6 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# 设置pip使用清华大学镜像源并安装Python依赖
-RUN pip3 install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple/ \
-    requests \
-    feedparser \
-    pytz \
-    aiohttp \
-    bs4 \
-    tqdm \
-    async-timeout \
-    Flask \
-    m3u8 \
-    ffmpeg-python \
-    gevent \
-    selenium
-
 # 拷贝当前目录所有文件到容器的 /app 目录下
 COPY . .
 
