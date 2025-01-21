@@ -28,6 +28,7 @@ def getChannelItems():
     """
     # Open the source file and read all lines.
     config.reload()
+    open_file = None
     try:
         user_source_file = (
             "user_" + config.source_file
@@ -35,6 +36,7 @@ def getChannelItems():
             else getattr(config, "source_file", "demo.txt")
         )
         with open(user_source_file, "r", encoding="utf-8-sig") as f:
+            open_file = f
             lines = f.readlines()
 
         # Create a dictionary to store the channels.
@@ -65,7 +67,8 @@ def getChannelItems():
                         )
         return channels
     finally:
-        f.close()
+        if open_file is not None:
+            open_file.close()
 
 
 def updateChannelUrlsTxt(cate, channelUrls):
