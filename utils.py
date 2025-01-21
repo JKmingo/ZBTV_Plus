@@ -56,8 +56,8 @@ class WebScraper:
                 self.visit_page(self.url)
                 continue
             # 找到并点击搜索按钮
-            search_button = self.driver.find_element(By.NAME, 'Submit')  # 根据按钮的 name 修改
-            search_button.click()
+            search_button = self.find_clickable_element_with_retry(By.NAME, 'Submit')  # 根据按钮的 name 修改
+            self.driver.execute_script("arguments[0].click();", search_button)
             time.sleep(2)
             # 等待搜索结果可见
             self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "result")))  # 根据实际的id定位结果元素
@@ -81,6 +81,18 @@ class WebScraper:
     def quit(self):
         """退出浏览器"""
         self.driver.quit()
+
+    def find_clickable_element_with_retry(self, locator, timeout=10, retries=3):
+        """
+        Find the clickable element with retry
+        """
+        wait = WebDriverWait(self.driver, timeout)
+        for _ in range(retries):
+            try:
+                return wait.until(EC.element_to_be_clickable(locator))
+            except Exception:
+                self.driver.refresh()
+        return None
 
 
 def getChannelItems():
