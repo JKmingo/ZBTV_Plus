@@ -1,8 +1,6 @@
 import json
 import socket
 import subprocess
-import traceback
-
 import requests
 
 from dynamic_config import DynamicConfig
@@ -10,7 +8,6 @@ config = DynamicConfig()
 import asyncio
 import time
 import re
-import datetime
 import os
 import urllib.parse
 import ipaddress
@@ -20,6 +17,62 @@ try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class WebScraper:
+    def __init__(self, chrome_binary_path=None):
+        # 配置 Chrome 选项
+        self.chrome_options = Options()
+        self.chrome_options.add_argument('--headless')  # 启动无头模式
+        self.chrome_options.add_argument('--disable-gpu')  # 禁用 GPU
+        self.chrome_options.add_argument('--no-sandbox')  # 禁用沙盒
+
+        if chrome_binary_path:
+            self.chrome_options.binary_location = chrome_binary_path
+
+        # 启动 WebDriver，指定 ChromeDriver 的路径
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.wait = WebDriverWait(self.driver, 10)  # 动态等待
+
+    def visit_page(self, url):
+        """访问指定的页面"""
+        self.driver.get(url)
+
+    def search(self, query='五星体育'):
+        """在输入框中输入查询并点击搜索"""
+        input_box = self.driver.find_element(By.ID, 'search')  # 根据页面上的 input 名称修改
+        input_box.send_keys(query)
+        # 找到并点击搜索按钮
+        search_button = self.driver.find_element(By.NAME, 'Submit')  # 根据按钮的 name 修改
+        search_button.click()
+        time.sleep(2)
+        # 等待搜索结果可见
+        self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "result")))  # 根据实际的id定位结果元素
+
+    def get_page_source(self):
+        """获取当前页面的 HTML 源代码"""
+        return self.driver.page_source
+
+    def navigate_page(self, page_number):
+        """模拟分页操作（例如通过点击 '下一页' 按钮）"""
+        # 假设页面有一个分页按钮，定位并点击对应页面
+        pagination_button = self.driver.find_element(By.XPATH, f"//a[starts-with(@href, '?page={page_number}')]")
+        if pagination_button:
+            pagination_button.click()
+
+        time.sleep(2)
+        # 等待页面加载
+        self.wait.until(EC.presence_of_element_located((By.ID, "result")))  # 根据实际情况定位
+
+    def quit(self):
+        """退出浏览器"""
+        self.driver.quit()
 
 
 def getChannelItems():
