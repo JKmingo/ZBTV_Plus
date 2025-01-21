@@ -1,7 +1,9 @@
+import re
 from ftplib import FTP
 import requests
 import shutil
 from dynamic_config import DynamicConfig
+
 config = DynamicConfig()
 import asyncio
 from bs4 import BeautifulSoup
@@ -41,19 +43,9 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 headers = {
-    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-    # 设置请求头中的Content-Type为JSON格式
-    'User-Agent': 'Mozilla5.0 (Linux; Android 8.0.0; SM-G955U BuildR16NW) AppleWebKit537.36 (KHTML, like Gecko) Chrome116.0.0.0 Mobile Safari537.36',
-    'Host': 'tonkiang.us',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Ch-Ua-Platform': 'Android',
-    'Sec-Ch-Ua-Mobile': '1',
-    'Sec-Ch-Ua': 'Not_A Brand;v=8, Chromium;v=120, Google Chrome;v=120',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Site': 'same-origin',
-    'Sec-Fetch-User': '1',
-    'Upgrade-Insecure-Requests': '1',
-    'Accept-Language': 'zh-CN,zh;q=0.9'
+    'Accept': '*/*',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 }
 
 post_headers = {
@@ -121,6 +113,8 @@ def search_hotel_ip():
                 if len(parts) == 2:
                     if parts[1].strip() == "#genre#":
                         search_area = parts[0].strip() if parts[0].strip().startswith(area) else area + parts[0].strip()
+                        if '上海' in search_area:
+                            search_area = "五星体育"
                         search_keyword_list.append(search_area)
                         continue
                     key = filter_CCTV_key(parts[0].strip())
@@ -133,10 +127,10 @@ def search_hotel_ip():
         for search_kw in search_keyword_list:
             zubo_source_ips = set()
             total_page_size = None
-            get_code = None
+            next_page_url = None
             session = requests.Session()
             post_form = {
-                'saerch': search_kw,
+                '52ff7': search_kw,
             }
             for page in range(1, config.search_page_num + 1):
                 try:
@@ -145,7 +139,7 @@ def search_hotel_ip():
                     if page == 1:
                         for attempt in range(max_retries):
                             try:
-                                response = session.post("http://tonkiang.us/hoteliptv.php", headers=post_headers,
+                                response = session.post("https://tonkiang.us/hoteliptv.php", headers=post_headers,
                                                         data=post_form, timeout=30)
                                 break
                             except requests.exceptions.RequestException as e:
@@ -153,7 +147,7 @@ def search_hotel_ip():
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     else:
-                        page_url = f"http://tonkiang.us/hoteliptv.php?page={page}&pv={quote(search_kw)}&code={get_code}"
+                        page_url = f"https://tonkiang.us/hoteliptv.php{next_page_url}"
                         for attempt in range(max_retries):
                             try:
                                 response = session.get(page_url, timeout=30)
@@ -164,34 +158,44 @@ def search_hotel_ip():
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     response.encoding = "UTF-8"
                     soup = BeautifulSoup(response.text, "html.parser")
-                    # tables_div = soup.find("div", class_="tables")
-                    results = (
-                        soup.find_all("div", class_="result")
-                        if soup
-                        else []
-                    )
+                    results = soup.find_all("div", class_="result")
+                    # 用于存储符合条件的IP地址和端口
+                    # 遍历每个结果
                     for result in results:
-                        try:
-                            zubo_source_ip = get_zubao_source_ip(result)
-                            if zubo_source_ip is not None:
-                                zubo_source_ips.add(zubo_source_ip)
-                        except Exception as e:
-                            print(f"Error on result {result}: {e}")
+                        if "失效" in result.get_text(strip=True):
                             continue
+                        # 查找IP和端口
+                        a_tag = result.find("a")
+                        if not a_tag:
+                            continue
+                        ip_tag = a_tag.find("b")
+                        if not ip_tag:
+                            continue
+                        ip_port = ip_tag.get_text(strip=True)  # 提取IP:Port
+                        # 查找状态信息（可能存在时间和上线信息）
+                        status_tag = result.find("div", style="font-size: 11px; color: #aaa;")
+                        if status_tag:
+                            status_text = status_tag.get_text(strip=True)  # 提取状态信息
+                            # 判断是否包含“上线”或“存活”
+                            if "上线" in status_text or "存活" in status_text:
+                                zubo_source_ips.add(ip_port)
 
                     if total_page_size is None:
                         a_tags = soup.find_all("a")
+                        page_urls = []
                         for a_tag in a_tags:
                             href_value = a_tag.get("href")
-                            if href_value is not None and href_value.startswith("?page="):
-                                val = href_value.replace("?page=", "")
-                                page_num = int(val.split("&")[0])
-                                if total_page_size is None:
-                                    total_page_size = page_num
-                                elif page_num > total_page_size:
-                                    total_page_size = page_num
-                            if get_code is None and href_value is not None and "code=" in href_value:
-                                get_code = href_value.split("code=")[1]
+                            if not href_value:
+                                continue
+                            if not href_value.startswith(f"?page="):
+                                continue
+                            page_urls.append(href_value)
+                        total_page_size = 10
+                        if page_urls:
+                            m = re.findall('page=(\d+)', page_urls[-1])
+                            if m:
+                                total_page_size = int(m[0])
+                                next_page_url = page_urls[-1].replace(f"page={total_page_size}", f"page={page + 1}")
                     if total_page_size is None or page >= total_page_size:
                         break
                 except Exception as e:
