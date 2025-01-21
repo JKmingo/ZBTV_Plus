@@ -58,7 +58,7 @@ class WebScraper:
                 self.visit_page(self.url)
                 continue
             # 找到并点击搜索按钮
-            search_button = self.find_clickable_element_with_retry(By.NAME, 'Submit')  # 根据按钮的 name 修改
+            self.find_clickable_element_with_retry((By.XPATH, '//input[@type="submit"]'))
             self.driver.execute_script("arguments[0].click();", search_button)
             time.sleep(2)
             # 等待搜索结果可见
