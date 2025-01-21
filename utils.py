@@ -4,6 +4,7 @@ import subprocess
 import requests
 
 from dynamic_config import DynamicConfig
+
 config = DynamicConfig()
 import asyncio
 import time
@@ -39,21 +40,28 @@ class WebScraper:
         # 启动 WebDriver，指定 ChromeDriver 的路径
         self.driver = webdriver.Chrome(options=self.chrome_options)
         self.wait = WebDriverWait(self.driver, 10)  # 动态等待
+        self.url = None
 
     def visit_page(self, url):
         """访问指定的页面"""
+        self.url = url
         self.driver.get(url)
 
     def search(self, query='五星体育'):
         """在输入框中输入查询并点击搜索"""
-        input_box = self.driver.find_element(By.ID, 'search')  # 根据页面上的 input 名称修改
-        input_box.send_keys(query)
-        # 找到并点击搜索按钮
-        search_button = self.driver.find_element(By.NAME, 'Submit')  # 根据按钮的 name 修改
-        search_button.click()
-        time.sleep(2)
-        # 等待搜索结果可见
-        self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "result")))  # 根据实际的id定位结果元素
+        for i in range(5):
+            input_box = self.driver.find_element(By.ID, 'search')  # 根据页面上的 input 名称修改
+            input_box.send_keys(query)
+            if self.driver.current_url != self.url:
+                self.visit_page(self.url)
+                continue
+            # 找到并点击搜索按钮
+            search_button = self.driver.find_element(By.NAME, 'Submit')  # 根据按钮的 name 修改
+            search_button.click()
+            time.sleep(2)
+            # 等待搜索结果可见
+            self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, "result")))  # 根据实际的id定位结果元素
+            break
 
     def get_page_source(self):
         """获取当前页面的 HTML 源代码"""
