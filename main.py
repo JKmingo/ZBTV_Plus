@@ -20,7 +20,7 @@ from utils import (
     getTotalUrlsFromInfoList,
     getChannelUrlsTxt,
     get_previous_results,
-    merge_urls_lists, checkByURLKeywordsBlacklist
+    merge_urls_lists, checkByURLKeywordsBlacklist, WebScraper
 )
 import logging
 import os
@@ -126,12 +126,7 @@ def search_hotel_ip():
 
         for search_kw in search_keyword_list:
             zubo_source_ips = set()
-            total_page_size = None
-            next_page_url = None
-            session = requests.Session()
-            post_form = {
-                'b8f54': search_kw,
-            }
+            web_browser = WebScraper()
             for page in range(1, config.search_page_num + 1):
                 try:
                     print(f"搜索关键字[{search_kw}]，第[{page}]页...")
@@ -139,25 +134,23 @@ def search_hotel_ip():
                     if page == 1:
                         for attempt in range(max_retries):
                             try:
-                                response = session.post("https://tonkiang.us/hoteliptv.php", headers=post_headers,
-                                                        data=post_form, timeout=30)
+                                web_browser.visit_page("https://tonkiang.us/hoteliptv.php")
+                                web_browser.search(search_kw)
                                 break
                             except requests.exceptions.RequestException as e:
                                 print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     else:
-                        page_url = f"https://tonkiang.us/hoteliptv.php{next_page_url}"
                         for attempt in range(max_retries):
                             try:
-                                response = session.get(page_url, timeout=30)
+                                web_browser.navigate_page(page)
                                 break
                             except requests.exceptions.RequestException as e:
                                 print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
-                    response.encoding = "UTF-8"
-                    soup = BeautifulSoup(response.text, "html.parser")
+                    soup = BeautifulSoup(web_browser.get_page_source(), "html.parser")
                     results = soup.find_all("div", class_="result")
                     # 用于存储符合条件的IP地址和端口
                     # 遍历每个结果
@@ -179,30 +172,13 @@ def search_hotel_ip():
                             # 判断是否包含“上线”或“存活”
                             if "上线" in status_text or "存活" in status_text:
                                 zubo_source_ips.add(ip_port)
-
-                    if total_page_size is None:
-                        a_tags = soup.find_all("a")
-                        page_urls = []
-                        for a_tag in a_tags:
-                            href_value = a_tag.get("href")
-                            if not href_value:
-                                continue
-                            if not href_value.startswith(f"?page="):
-                                continue
-                            page_urls.append(href_value)
-                        total_page_size = 10
-                        if page_urls:
-                            m = re.findall('page=(\d+)', page_urls[-1])
-                            if m:
-                                total_page_size = int(m[0])
-                                next_page_url = page_urls[-1].replace(f"page={total_page_size}", f"page={page + 1}")
-                    if total_page_size is None or page >= total_page_size:
-                        break
                 except Exception as e:
                     # traceback.print_exc()
                     print(f"Error on page {page}: {e}")
                     continue
-
+                finally:
+                    if web_browser:
+                        web_browser.quit()
             if len(zubo_source_ips) == 0:
                 continue
             kw_zbip_dict[search_kw] = zubo_source_ips
