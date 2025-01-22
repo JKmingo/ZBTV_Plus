@@ -46,6 +46,7 @@ class WebScraper:
         """访问指定的页面"""
         self.url = url
         self.driver.get(url)
+        print(self.get_page_source())
 
     def search(self, query='五星体育'):
         """在输入框中输入查询并点击搜索"""
