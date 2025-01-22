@@ -142,7 +142,12 @@ def search_hotel_ip():
             else:
                 name_value = 'b8f54'
                 print("未找到 id='search' 的 input 标签")
-            area_dict = {'上海': '五星体育'}
+            area_dict = {
+                '上海': '五星体育',
+                '上海电信': '五星体育',
+                '上海移动': '五星体育',
+                '上海联通': '五星体育',
+            }
             post_form = {
                 name_value: area_dict.get(search_kw, search_kw)
             }
