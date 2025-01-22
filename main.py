@@ -174,6 +174,7 @@ def search_hotel_ip():
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     response.encoding = "UTF-8"
+                    print(response.text)
                     soup = BeautifulSoup(response.text, "html.parser")
                     results = soup.find_all("div", class_="result")
                     # 用于存储符合条件的IP地址和端口
