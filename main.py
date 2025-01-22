@@ -130,9 +130,7 @@ def search_hotel_ip():
             total_page_size = None
             next_page_url = None
             session = requests.Session()
-            session.get("https://tonkiang.us/hoteliptv.php", headers=post_headers, timeout=30)
-            session = requests.Session()
-            tk_resp = session.get("https://tonkiang.us/hoteliptv.php", headers=post_headers, timeout=30)
+            tk_resp = session.get("https://up.myzy.us.kg/https://tonkiang.us/hoteliptv.php", headers=post_headers, timeout=30)
             soup = BeautifulSoup(tk_resp.text, "html.parser")
             input_tag = soup.find("input", id="search")
             # 获取 name 的值
