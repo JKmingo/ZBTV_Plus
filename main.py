@@ -156,15 +156,16 @@ def search_hotel_ip():
                     if page == 1:
                         for attempt in range(max_retries):
                             try:
-                                response = session.post("https://tonkiang.us/hoteliptv.php", headers=post_headers,
+                                response = session.post("https://up.myzy.us.kg/https://tonkiang.us/hoteliptv.php", headers=post_headers,
                                                         data=post_form, timeout=30)
+                                # print(response.text)
                                 break
                             except requests.exceptions.RequestException as e:
                                 print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     else:
-                        page_url = f"https://tonkiang.us/hoteliptv.php{next_page_url}"
+                        page_url = f"https://up.myzy.us.kg/https://tonkiang.us/hoteliptv.php{next_page_url}"
                         for attempt in range(max_retries):
                             try:
                                 response = session.get(page_url, timeout=30)
@@ -174,7 +175,6 @@ def search_hotel_ip():
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     response.encoding = "UTF-8"
-                    print(response.text)
                     soup = BeautifulSoup(response.text, "html.parser")
                     results = soup.find_all("div", class_="result")
                     # 用于存储符合条件的IP地址和端口
