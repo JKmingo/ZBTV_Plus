@@ -20,7 +20,7 @@ from utils import (
     getTotalUrlsFromInfoList,
     getChannelUrlsTxt,
     get_previous_results,
-    merge_urls_lists, checkByURLKeywordsBlacklist, WebScraper
+    merge_urls_lists, checkByURLKeywordsBlacklist
 )
 import logging
 import os
@@ -42,17 +42,17 @@ formatter = logging.Formatter('%(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-headers = {
+post_headers = {
     'Accept': '*/*',
     'Content-Type': 'application/x-www-form-urlencoded',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 }
 
-post_headers = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
-}
+# post_headers = {
+#     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+#     'Content-Type': 'application/x-www-form-urlencoded',
+#     'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36'
+# }
 
 previous_result_dict = {}
 channel_result_dict = {}
@@ -84,6 +84,9 @@ def get_crawl_result():
                     value = parts[1].strip()
                     if " " in key:
                         key = key.replace(" ", "")
+                    if config.search_ignore_key:
+                        for ignore_kw in config.search_ignore_key:
+                            key = key.replace(ignore_kw, "")
                     if key in crawl_result_dict:
                         crawl_result_dict[key].append(value)
                     else:
@@ -113,8 +116,6 @@ def search_hotel_ip():
                 if len(parts) == 2:
                     if parts[1].strip() == "#genre#":
                         search_area = parts[0].strip() if parts[0].strip().startswith(area) else area + parts[0].strip()
-                        if '上海' in search_area:
-                            search_area = "五星体育"
                         search_keyword_list.append(search_area)
                         continue
                     key = filter_CCTV_key(parts[0].strip())
@@ -126,7 +127,25 @@ def search_hotel_ip():
 
         for search_kw in search_keyword_list:
             zubo_source_ips = set()
-            web_browser = WebScraper()
+            total_page_size = None
+            next_page_url = None
+            session = requests.Session()
+            session.get("https://tonkiang.us/hoteliptv.php", headers=post_headers, timeout=30)
+            session = requests.Session()
+            tk_resp = session.get("https://tonkiang.us/hoteliptv.php", headers=post_headers, timeout=30)
+            soup = BeautifulSoup(tk_resp.text, "html.parser")
+            input_tag = soup.find("input", id="search")
+            # 获取 name 的值
+            if input_tag and "name" in input_tag.attrs:
+                name_value = input_tag["name"]
+                print("Name 值:", name_value)
+            else:
+                name_value = 'b8f54'
+                print("未找到 id='search' 的 input 标签")
+            area_dict = {'上海': '五星体育'}
+            post_form = {
+                name_value: area_dict.get(search_kw, search_kw)
+            }
             for page in range(1, config.search_page_num + 1):
                 try:
                     print(f"搜索关键字[{search_kw}]，第[{page}]页...")
@@ -134,23 +153,25 @@ def search_hotel_ip():
                     if page == 1:
                         for attempt in range(max_retries):
                             try:
-                                web_browser.visit_page("htts://up.myzy.us.kg/https://tonkiang.us/hoteliptv.php")
-                                web_browser.search(search_kw)
+                                response = session.post("https://tonkiang.us/hoteliptv.php", headers=post_headers,
+                                                        data=post_form, timeout=30)
                                 break
                             except requests.exceptions.RequestException as e:
                                 print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
                     else:
+                        page_url = f"https://tonkiang.us/hoteliptv.php{next_page_url}"
                         for attempt in range(max_retries):
                             try:
-                                web_browser.navigate_page(page)
+                                response = session.get(page_url, timeout=30)
                                 break
                             except requests.exceptions.RequestException as e:
                                 print(f"请求失败，正在进行第[{attempt + 1}]次重试...")
                         else:
                             print(f"尝试[{max_retries}]后仍然失败！！！")
-                    soup = BeautifulSoup(web_browser.get_page_source(), "html.parser")
+                    response.encoding = "UTF-8"
+                    soup = BeautifulSoup(response.text, "html.parser")
                     results = soup.find_all("div", class_="result")
                     # 用于存储符合条件的IP地址和端口
                     # 遍历每个结果
@@ -172,13 +193,30 @@ def search_hotel_ip():
                             # 判断是否包含“上线”或“存活”
                             if "上线" in status_text or "存活" in status_text:
                                 zubo_source_ips.add(ip_port)
+
+                    if total_page_size is None:
+                        a_tags = soup.find_all("a")
+                        page_urls = []
+                        for a_tag in a_tags:
+                            href_value = a_tag.get("href")
+                            if not href_value:
+                                continue
+                            if not href_value.startswith(f"?page="):
+                                continue
+                            page_urls.append(href_value)
+                        total_page_size = 10
+                        if page_urls:
+                            m = re.findall(r'page=(\d+)', page_urls[-1])
+                            if m:
+                                total_page_size = int(m[0])
+                                next_page_url = page_urls[-1].replace(f"page={total_page_size}", f"page={page + 1}")
+                    if total_page_size is None or page >= total_page_size:
+                        break
                 except Exception as e:
                     # traceback.print_exc()
                     print(f"Error on page {page}: {e}")
                     continue
-                finally:
-                    if web_browser:
-                        web_browser.quit()
+
             if len(zubo_source_ips) == 0:
                 continue
             kw_zbip_dict[search_kw] = zubo_source_ips
